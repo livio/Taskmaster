@@ -16,7 +16,7 @@ public class Queue{
     protected Node<Task> tail;
 
 
-    public Queue(String name, int id, IQueue callback){
+    public Queue(String name, int id, final IQueue callback){
         TASKS_LOCK = new Object();
         this.name = name;
         this.id = id;

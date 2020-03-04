@@ -1,16 +1,27 @@
-plugins {
-    id 'java'
-}
+apply plugin: 'java-library'
 
 group 'com.livio.taskmaster'
 version '0.1'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.7
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
+    }
+}
 
 repositories {
     mavenCentral()
+    google()
+    jcenter()
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
+
+apply from: 'bintray.gradle'
