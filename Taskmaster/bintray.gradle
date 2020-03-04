@@ -5,7 +5,6 @@ apply plugin: 'maven'
 def siteUrl = 'https://github.com/livio/Taskmaster'      // Homepage URL of the library
 def gitUrl = 'https://github.com/livio/Taskmaster.git'   // Git repository URL
 def libDescription = 'Task and thread management for Java'
-def libVersion = '0.1'
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -30,7 +29,7 @@ bintray {
     // Authorization
     user = props.getProperty("bintray.user")
     key = props.getProperty("bintray.key")
-    version = libVersion
+    version = props.getProperty("bintray.version")
     publications = ['mavenPublication']
 
 
@@ -43,10 +42,10 @@ bintray {
         licenses = ["BSD 3-Clause"]
         publish = props.getProperty("bintray.publish")  // Will upload to jCenter
         version {
-            name = libVersion  // Change to release version
+            name = props.getProperty("bintray.version")
             desc = libDescription
             released  = new Date()  // Will be the current date & time
-            vcsTag = libVersion // Should match git tag
+            vcsTag = props.getProperty("bintray.version")
         }
     }
 }
@@ -83,7 +82,7 @@ publishing {
             }
             groupId props.getProperty("bintray.group")
             artifactId props.getProperty("bintray.artifact")
-            version libVersion
+            version props.getProperty("bintray.version")
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', libDescription)
