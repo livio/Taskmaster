@@ -37,9 +37,9 @@ public class LimitedQueue extends Queue {
         unblockNextTask();
     }
 
+    @SuppressWarnings("unused")
     @Override
     public final void add(Task task, boolean placeAtHead) {
         TaskmasterLogger.w(TAG, "Limited queues can't have tasks added after creation");
-        return;
     }
 }

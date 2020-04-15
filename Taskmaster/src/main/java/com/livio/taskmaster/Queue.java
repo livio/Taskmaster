@@ -5,15 +5,16 @@ public class Queue {
 
     private static final String TAG = "Queue";
 
-    protected final Object TASKS_LOCK;
-    protected final String name;
-    protected final int id;
-    protected final Task.ITask taskCallback;
-    protected final IQueue callback;
+    final Object TASKS_LOCK;
+    final String name;
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    private final int id;
+    private final Task.ITask taskCallback;
+    final IQueue callback;
 
     //Doubly linked list
-    protected Node<Task> head;
-    protected Node<Task> tail;
+    Node<Task> head;
+    private Node<Task> tail;
 
 
     public Queue(String name, int id, final IQueue callback) {
@@ -53,12 +54,12 @@ public class Queue {
         };
     }
 
-    protected void onQueueEmpty() {
+    void onQueueEmpty() {
 
     }
 
 
-    protected boolean unblockNextTask() {
+    boolean unblockNextTask() {
         synchronized (TASKS_LOCK) {
             if (head != null) {
                 TaskmasterLogger.v(TAG, "unblockNextTask: Attempting to unblock a task for queue " + name);
@@ -83,7 +84,7 @@ public class Queue {
      *
      * @param task the task to be inserted at the tail of the queue
      */
-    protected void insertAtTail(Task task) {
+    void insertAtTail(Task task) {
         if (task == null) {
             throw new NullPointerException();
         }
@@ -103,7 +104,7 @@ public class Queue {
      *
      * @param task the task to be inserted at the head of the queue
      */
-    protected void insertAtHead(Task task) {
+    void insertAtHead(Task task) {
         if (task == null) {
             throw new NullPointerException();
         }
@@ -205,7 +206,6 @@ public class Queue {
                 Node<Task> current = head;
                 while (current != null && current.next != null) {
                     current.item.onError();
-                    ;
                     current = current.next;
                 }
 
@@ -216,12 +216,14 @@ public class Queue {
         }
     }
 
+    @SuppressWarnings("unused")
     public interface IQueue {
         void onTaskReady(Queue queue);
 
         void onQueueClosed(Queue queue);
     }
 
+    @SuppressWarnings("unused")
     final class Node<E> {
         final E item;
         Node<E> prev;

@@ -44,7 +44,7 @@ public class Tests {
         //Build the task master instance
         Taskmaster.Builder builder = new Taskmaster.Builder();
         builder.setThreadCount(-1);
-        builder.shouldBeDameon(false);
+        builder.shouldBeDaemon(false);
         builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
 

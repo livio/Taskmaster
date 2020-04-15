@@ -22,17 +22,19 @@ public class Taskmaster {
     private final Queue.IQueue queueCallback;
 
 
-    private boolean shouldBeDameon = false, debugEnabled = false;
+    private boolean shouldBeDaemon = false, debugEnabled = false;
+    @SuppressWarnings("unused")
     private TaskmasterLogger taskMasterLogger;
     private ExecutorService executorService;
 
-    public Taskmaster() {
+    private Taskmaster() {
         QUEUE_LOCK = new Object();
         queues = new Vector<>();
         taskmasterThread = new TaskmasterThread();
         queueCallback = new Queue.IQueue() {
             @Override
             public void onTaskReady(Queue queue) {
+                //noinspection ConstantConditions
                 if (taskmasterThread != null) {
                     taskmasterThread.alert();
                 }
@@ -50,7 +52,7 @@ public class Taskmaster {
 
     //Init
 
-    protected void initThreadPool(int threadCount) {
+    private void initThreadPool(int threadCount) {
         if (threadCount > 1) {
             executorService = Executors.newFixedThreadPool(threadCount);
         } else if (threadCount == 1) {
@@ -101,7 +103,7 @@ public class Taskmaster {
         return queue;
     }
 
-    protected Task getNextTask() {
+    private Task getNextTask() {
         TaskmasterLogger.v(TAG, "Getting next task");
 
         final long currentTime = System.currentTimeMillis();
@@ -140,12 +142,12 @@ public class Taskmaster {
 
 
     private class TaskmasterThread extends Thread {
-        protected final Object TASK_THREAD_LOCK = new Object();
+        final Object TASK_THREAD_LOCK = new Object();
         private boolean isHalted = false, isWaiting = false;
 
-        public TaskmasterThread() {
+        TaskmasterThread() {
             this.setName("TaskmasterThread");
-            this.setDaemon(shouldBeDameon);
+            this.setDaemon(shouldBeDaemon);
         }
 
 
@@ -198,7 +200,7 @@ public class Taskmaster {
 
 
     public static class Builder {
-        Taskmaster taskMaster;
+        final Taskmaster taskMaster;
         int threadCount;
         ITaskmasterLogger logger;
 
@@ -212,8 +214,8 @@ public class Taskmaster {
             return this;
         }
 
-        public Builder shouldBeDameon(boolean shouldBeDameon) {
-            taskMaster.shouldBeDameon = shouldBeDameon;
+        public Builder shouldBeDaemon(boolean shouldBeDaemon) {
+            taskMaster.shouldBeDaemon = shouldBeDaemon;
             return this;
         }
 

@@ -9,16 +9,16 @@ public abstract class Task implements Runnable {
 
     public static final int BLOCKED = 0x00;
     public static final int READY = 0x10;
-    public static final int IN_PROGRESS = 0x30;
+    private static final int IN_PROGRESS = 0x30;
     public static final int FINISHED = 0x50;
     public static final int CANCELED = 0xCA;
     public static final int ERROR = 0xFF;
 
     private final Object STATE_LOCK;
+    private final long timestamp;
 
-    int state;
-    long timestamp;
-    ITask callback;
+    private int state;
+    private ITask callback;
     final String name;
 
 
@@ -29,7 +29,7 @@ public abstract class Task implements Runnable {
         this.name = name;
     }
 
-    protected void switchStates(int newState) {
+    void switchStates(int newState) {
         TaskmasterLogger.v(TAG, name + " switchStates: " + state);
         int oldState = state;
         synchronized (STATE_LOCK) {
@@ -41,7 +41,7 @@ public abstract class Task implements Runnable {
         }
     }
 
-    protected void setCallback(ITask callback) {
+    void setCallback(ITask callback) {
         this.callback = callback;
     }
 
@@ -97,6 +97,7 @@ public abstract class Task implements Runnable {
     public abstract void onExecute();
 
     public interface ITask {
+        @SuppressWarnings("unused")
         void onStateChanged(Task task, int previous, int newState);
     }
 

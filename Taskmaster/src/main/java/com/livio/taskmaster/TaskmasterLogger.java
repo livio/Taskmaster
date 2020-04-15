@@ -1,15 +1,16 @@
 package com.livio.taskmaster;
 
+@SuppressWarnings("ALL")
 class TaskmasterLogger {
 
-    protected static ITaskmasterLogger logger;
-    protected static boolean logsEnabled = false;
+    private static ITaskmasterLogger logger;
+    private static boolean logsEnabled = false;
 
     TaskmasterLogger(ITaskmasterLogger logger) {
         if (TaskmasterLogger.logger != null) {
             throw new IllegalStateException("Already initialized with logger");
         } else {
-            this.logger = logger;
+            TaskmasterLogger.logger = logger;
         }
     }
 
