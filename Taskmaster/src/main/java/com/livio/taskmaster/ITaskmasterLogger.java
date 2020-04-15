@@ -15,5 +15,6 @@ public interface ITaskmasterLogger {
     void w(String tag, String message);
 
     void e(String tag, String message);
+
     void e(String tag, String message, Exception e);
 }

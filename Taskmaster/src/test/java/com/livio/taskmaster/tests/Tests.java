@@ -32,11 +32,13 @@ public class Tests {
         }).start();
         */
     }
+
     static int completed = 0;
     static final long startTime = System.currentTimeMillis();
     static Taskmaster taskmaster;
     static List<String> taskNames = new ArrayList<>();
     static Queue q1, q2;
+
     public static void startTheMachine(String[] args) {
 
         //Build the task master instance
@@ -45,7 +47,6 @@ public class Tests {
         builder.shouldBeDameon(false);
         builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
-
 
 
         taskmaster = builder.build();
@@ -96,9 +97,10 @@ public class Tests {
     static double totalSleep = 0;
     static int numberOfGeneratedTasks = 0;
     static HashSet<String> threads = new HashSet<>();
-    static Task generateTask(String name){
+
+    static Task generateTask(final String name) {
         numberOfGeneratedTasks++;
-        return  new Task(name){
+        return new Task(name) {
             @Override
             public void onExecute() {
 
@@ -106,7 +108,7 @@ public class Tests {
 
                 double sleep = new Random().nextInt(5) * 250;
                 System.out.println("Sleeping for " + sleep);
-                if(name.equals("33")){
+                if (name.equals("33")) {
                     synchronized (COUNT_LOCK) {
                         completed++;
                         taskNames.add(this.getName());
@@ -115,24 +117,24 @@ public class Tests {
 
                     return;
                 }
-                synchronized (SLEEP_LOCK){
+                synchronized (SLEEP_LOCK) {
                     totalSleep += sleep;
                 }
-                try{
-                    Thread.sleep((long)(sleep));
-                }catch (Exception e){
+                try {
+                    Thread.sleep((long) (sleep));
+                } catch (Exception e) {
                     e.printStackTrace();
                     this.onError();
                 }
                 System.out.println("Task finished " + name);
 
                 this.onFinished();
-                if(this.getName().equals("3")){
+                if (this.getName().equals("3")) {
                     System.out.println(" Closing queue 1");
 
                     q1.close();
                     synchronized (COUNT_LOCK) {
-                        numberOfGeneratedTasks-=2;
+                        numberOfGeneratedTasks -= 2;
                     }
                     q2.add(generateTask("25"), false);
                     q2.add(generateTask("26"), false);
@@ -143,14 +145,14 @@ public class Tests {
                     completed++;
                     taskNames.add(this.getName());
                     System.out.println("Completed number " + completed);
-                    if(completed == numberOfGeneratedTasks){
+                    if (completed == numberOfGeneratedTasks) {
                         System.out.println("Sleeps totaled:: " + (totalSleep));
                         System.out.println("Finished all tasks in: " + (System.currentTimeMillis() - startTime));
                         System.out.println("Used # threads: " + threads.size());
 
                         StringBuilder builder = new StringBuilder();
                         builder.append("Completion Order: ");
-                        for(String name : taskNames){
+                        for (String name : taskNames) {
                             builder.append(name);
                             builder.append(", ");
                         }
@@ -162,7 +164,6 @@ public class Tests {
             }
         };
     }
-
 
 
     //Create logging interface

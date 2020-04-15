@@ -44,7 +44,7 @@ bintray {
         version {
             name = props.getProperty("bintray.version")
             desc = libDescription
-            released  = new Date()  // Will be the current date & time
+            released = new Date()  // Will be the current date & time
             vcsTag = props.getProperty("bintray.version")
         }
     }

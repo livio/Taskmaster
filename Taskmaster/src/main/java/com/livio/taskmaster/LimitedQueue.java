@@ -8,7 +8,7 @@ import java.util.List;
 public class LimitedQueue extends Queue {
     private static final String TAG = "LimitedQueue";
 
-    public LimitedQueue(String name, int id, List<Task> tasks, IQueue callback){
+    public LimitedQueue(String name, int id, List<Task> tasks, IQueue callback) {
         super(name, id, callback);
         addAll(tasks);
 
@@ -18,15 +18,15 @@ public class LimitedQueue extends Queue {
     protected void onQueueEmpty() {
         TaskmasterLogger.d(TAG, name + " queue as finished and will close");
         //should queue close?
-        if(callback !=null){
+        if (callback != null) {
             callback.onQueueClosed(LimitedQueue.this);
         }
     }
 
-    private void addAll(List<Task> tasks){
-        synchronized (TASKS_LOCK){
+    private void addAll(List<Task> tasks) {
+        synchronized (TASKS_LOCK) {
             //Go through list and create linked list
-            for(Task task : tasks){
+            for (Task task : tasks) {
                 if (head == null) {
                     insertAtHead(task);
                 } else {
