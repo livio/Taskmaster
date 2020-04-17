@@ -28,34 +28,39 @@ public class Queue {
                 // System.out.println("onStateChanged: "+ task.name + " changed to state " + newState);
                 switch (newState) {
                     case Task.ERROR:
+                        TaskmasterLogger.w(TAG, task.name + " task encountered an error");
+                        handleCompletedTask();
+                        break;
                     case Task.FINISHED:
-                        if (unblockNextTask() && callback != null) {
-                            TaskmasterLogger.v(TAG, "Task is ready so lets let the master know");
-
-                            //Alert that there is a new task ready
-                            callback.onTaskReady(Queue.this);
-
-                        } else if (head == null) {
-                            onQueueEmpty();
-                        }
+                        TaskmasterLogger.d(TAG, task.name + " task has finished");
+                        handleCompletedTask();
                         break;
                     case Task.CANCELED:
                         //This will only be called when the task was in progress, but canceled at some point
-                        TaskmasterLogger.d(TAG, task.name + " task was canceled during operation");
-                        if (unblockNextTask() && callback != null) {
-                            TaskmasterLogger.v(TAG, "Task is ready so lets let the master know");
+                        TaskmasterLogger.w(TAG, task.name + " task was canceled during operation");
+                        handleCompletedTask();
+                        break;
+                }
+            }
 
-                            //Alert that there is a new task ready
-                            callback.onTaskReady(Queue.this);
+            private void handleCompletedTask(){
+                if (unblockNextTask()) {
+                    TaskmasterLogger.v(TAG, "Task is ready so lets let the master know");
 
-                        }
+                    if(callback != null) {
+                        //Alert that there is a new task ready
+                        callback.onTaskReady(Queue.this);
+                    }
+
+                } else if (head == null) {
+                    onQueueEmpty();
                 }
             }
         };
     }
 
     void onQueueEmpty() {
-
+        TaskmasterLogger.i(TAG, this.name + " queue is now empty");
     }
 
 
