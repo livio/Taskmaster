@@ -26,25 +26,25 @@ class TaskmasterLogger {
 
     static void d(String tag, String message) {
         if (logsEnabled && logger != null) {
-            logger.v(tag, message);
+            logger.d(tag, message);
         }
     }
 
     static void i(String tag, String message) {
         if (logsEnabled && logger != null) {
-            logger.v(tag, message);
+            logger.i(tag, message);
         }
     }
 
     static void w(String tag, String message) {
         if (logsEnabled && logger != null) {
-            logger.v(tag, message);
+            logger.w(tag, message);
         }
     }
 
     static void e(String tag, String message) {
         if (logsEnabled && logger != null) {
-            logger.v(tag, message);
+            logger.e(tag, message);
         }
     }
 
