@@ -27,6 +27,9 @@ public abstract class Task implements Runnable {
         STATE_LOCK = new Object();
         switchStates(BLOCKED);
         this.name = name;
+        if(name == null){
+            throw new NullPointerException("Name can't be null");
+        }
     }
 
     void switchStates(int newState) {
