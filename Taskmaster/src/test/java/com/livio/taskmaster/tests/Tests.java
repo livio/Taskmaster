@@ -13,7 +13,10 @@ import java.util.Random;
 public class Tests {
 
     public static void main(String[] args) {
-        startTheMachine(args);
+        //simpleTest();
+
+        startTheMachine();
+
 
         /* If you want to test the daemon setting use something like the following
         new Thread(new Runnable(){
@@ -32,6 +35,24 @@ public class Tests {
         }).start();
         */
     }
+    public static void simpleTest() {
+        //Build the task master instance
+        Taskmaster.Builder builder = new Taskmaster.Builder();
+        builder.setThreadCount(2);
+        builder.shouldBeDaemon(false);
+        builder.setTaskMasterLogger(new Logger());
+        builder.enableDebug(true);
+        taskmaster = builder.build();
+        taskmaster.start();
+
+        Queue syncQueue = taskmaster.createQueue("Queue 5", 5, true);
+        syncQueue.add(generateTask("51"), false);
+        syncQueue.add(generateTask("52"), false);
+        syncQueue.add(generateTask("53"), true);
+        syncQueue.add(generateTask("54"), false);
+        syncQueue.add(generateTask("55"), false);
+        syncQueue.add(generateTask("56"), true);
+    }
 
     static int completed = 0;
     static final long startTime = System.currentTimeMillis();
@@ -39,11 +60,11 @@ public class Tests {
     static List<String> taskNames = new ArrayList<>();
     static Queue q1, q2;
 
-    public static void startTheMachine(String[] args) {
+    public static void startTheMachine() {
 
         //Build the task master instance
         Taskmaster.Builder builder = new Taskmaster.Builder();
-        builder.setThreadCount(-1);
+        builder.setThreadCount(3);
         builder.shouldBeDaemon(false);
         builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
@@ -52,10 +73,10 @@ public class Tests {
         taskmaster = builder.build();
         taskmaster.start();
 
-        q1 = taskmaster.createQueue("Queue 1", 1);
-        q2 = taskmaster.createQueue("Queue 2", 2);
-        Queue q3 = taskmaster.createQueue("Queue 3", 3);
-        Queue q5 = taskmaster.createQueue("Queue 5", 5);
+        q1 = taskmaster.createQueue("Queue 1", 1, true);
+        q2 = taskmaster.createQueue("Queue 2", 2, false);
+        Queue q3 = taskmaster.createQueue("Queue 3", 3,true);
+        Queue q5 = taskmaster.createQueue("Queue 5", 5,false);
 
 
         q1.add(generateTask("1"), false);
