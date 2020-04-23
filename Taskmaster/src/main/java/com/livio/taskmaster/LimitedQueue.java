@@ -8,8 +8,8 @@ import java.util.List;
 public class LimitedQueue extends Queue {
     private static final String TAG = "LimitedQueue";
 
-    public LimitedQueue(String name, int id, List<Task> tasks, IQueue callback) {
-        super(name, id, callback);
+    public LimitedQueue(String name, int id, List<Task> tasks, boolean asynchronous, IQueue callback) {
+        super(name, id, asynchronous, callback);
         addAll(tasks);
 
     }

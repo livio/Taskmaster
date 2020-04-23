@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Currently each queue is going to be a serial queue.
@@ -34,6 +35,7 @@ public class Taskmaster {
         queueCallback = new Queue.IQueue() {
             @Override
             public void onTaskReady(Queue queue) {
+                TaskmasterLogger.i(TAG, "Task ready from queue " + queue.getName());
                 //noinspection ConstantConditions
                 if (taskmasterThread != null) {
                     taskmasterThread.alert();
@@ -81,9 +83,9 @@ public class Taskmaster {
         }
     }
 
-    public Queue createQueue(String name, int id) {
+    public Queue createQueue(String name, int id, boolean asynchronous) {
         synchronized (QUEUE_LOCK) {
-            Queue queue = new Queue(name, id, queueCallback);
+            Queue queue = new Queue(name, id, asynchronous, queueCallback);
             queues.add(queue);
             return queue;
         }
@@ -93,7 +95,7 @@ public class Taskmaster {
     public LimitedQueue createLimitedQueue(String name, int id, List<Task> tasks) {
         LimitedQueue queue;
         synchronized (QUEUE_LOCK) {
-            queue = new LimitedQueue(name, id, tasks, queueCallback);
+            queue = new LimitedQueue(name, id, tasks, false, queueCallback);
             queues.add(queue);
         }
         if (taskmasterThread != null) {
@@ -164,6 +166,7 @@ public class Taskmaster {
                             //There is a task that needs to be executed
                             //Find a thread to run this on
                             executorService.submit(task);
+
                             //FIXME we might want to switch this to a better managed system
                             //For example, this method simply takes all queues and processes them
 

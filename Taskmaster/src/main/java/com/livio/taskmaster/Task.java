@@ -9,7 +9,7 @@ public abstract class Task implements Runnable {
 
     public static final int BLOCKED = 0x00;
     public static final int READY = 0x10;
-    private static final int IN_PROGRESS = 0x30;
+    public static final int IN_PROGRESS = 0x30;
     public static final int FINISHED = 0x50;
     public static final int CANCELED = 0xCA;
     public static final int ERROR = 0xFF;

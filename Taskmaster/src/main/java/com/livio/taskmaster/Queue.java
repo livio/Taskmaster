@@ -10,44 +10,58 @@ public class Queue {
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final int id;
     private final Task.ITask taskCallback;
+    private final boolean asynchronous;
     final IQueue callback;
 
     //Doubly linked list
     Node<Task> head;
     private Node<Task> tail;
+    private Task currentTask = null;
 
 
-    public Queue(String name, int id, final IQueue callback) {
+    public Queue(String name, int id, boolean asynchronous, final IQueue callback) {
         TASKS_LOCK = new Object();
         this.name = name;
         this.id = id;
+        this.asynchronous = asynchronous;
         this.callback = callback;
         taskCallback = new Task.ITask() {
             @Override
             public void onStateChanged(Task task, int previous, int newState) {
                 // System.out.println("onStateChanged: "+ task.name + " changed to state " + newState);
                 switch (newState) {
+                    case Task.IN_PROGRESS:
+                        if(Queue.this.asynchronous){
+                            TaskmasterLogger.w(TAG, task.name + " task is in progress and queue is asynchronous");
+                            handleCompletedTask(task);
+                        }
+                        break;
                     case Task.ERROR:
                         TaskmasterLogger.w(TAG, task.name + " task encountered an error");
-                        handleCompletedTask();
+                        handleCompletedTask(task);
                         break;
                     case Task.FINISHED:
                         TaskmasterLogger.d(TAG, task.name + " task has finished");
-                        handleCompletedTask();
+                        handleCompletedTask(task);
                         break;
                     case Task.CANCELED:
                         //This will only be called when the task was in progress, but canceled at some point
                         TaskmasterLogger.w(TAG, task.name + " task was canceled during operation");
-                        handleCompletedTask();
+                        handleCompletedTask(task);
                         break;
                 }
             }
 
-            private void handleCompletedTask(){
-                if (unblockNextTask()) {
-                    TaskmasterLogger.v(TAG, "Task is ready so lets let the master know");
+            private void handleCompletedTask(final Task task){
 
-                    if(callback != null) {
+                task.setCallback(null);
+
+                if(task == currentTask){
+                    currentTask = null;
+                }
+                if (unblockNextTask()) {
+
+                    if (callback != null) {
                         //Alert that there is a new task ready
                         callback.onTaskReady(Queue.this);
                     }
@@ -57,6 +71,10 @@ public class Queue {
                 }
             }
         };
+    }
+
+    public String getName(){
+        return this.name;
     }
 
     void onQueueEmpty() {
@@ -70,7 +88,7 @@ public class Queue {
                 TaskmasterLogger.v(TAG, "unblockNextTask: Attempting to unblock a task for queue " + name);
                 Task nextTask = head.item;
 
-                if (nextTask != null && nextTask.getState() == Task.BLOCKED) {
+                if (currentTask == null && nextTask != null && (nextTask.getState() == Task.BLOCKED || nextTask.getState() == Task.READY)) {
                     nextTask.switchStates(Task.READY);
                     nextTask.setCallback(taskCallback);
                     TaskmasterLogger.v(TAG, "unblockNextTask: Unblocked a task for queue " + name);
@@ -135,6 +153,7 @@ public class Queue {
             if (task == null) {
                 throw new NullPointerException();
             }
+            TaskmasterLogger.d(TAG,"Adding task " + task.getName());
 
             //If we currently don't have anything in our queue
             if (head == null || tail == null) {
@@ -143,12 +162,17 @@ public class Queue {
                 tail = taskNode;
 
             } else if (placeAtHead) {
+                if(head != null){
+                    //reset the current head in case it is in a ready state
+                    head.item.setCallback(null);
+                    head.item.switchStates(Task.BLOCKED);
+                }
                 insertAtHead(task);
             } else {
                 insertAtTail(task);
             }
         }
-        if (head == tail || placeAtHead) { //If there's either only one task or a new head, we need to set it to ready
+        if ((head == tail  || placeAtHead ) && currentTask == null) { //If there's either only one task or a new head, we need to set it to ready
             //there is only one task on the stack
             if (unblockNextTask() && callback != null) {
                 TaskmasterLogger.v(TAG, "pushaddTask: Alerting task master");
@@ -166,7 +190,14 @@ public class Queue {
      */
     public Task poll() {
         synchronized (TASKS_LOCK) {
-            if (head == null) {
+            if (head == null ) {
+                TaskmasterLogger.i(TAG, "Poll: head is null");
+                return null;
+            } else if ( head.item.getState() != Task.READY) {
+                TaskmasterLogger.i(TAG, "Poll: head task sate is not READY: " + head.item.getState());
+                return null;
+            } else if ( currentTask != null) {
+                TaskmasterLogger.i(TAG, "Poll: currentTask is not null");
                 return null;
             } else {
                 Node<Task> retValNode = head;
@@ -185,7 +216,9 @@ public class Queue {
 
                 head = newHead;
 
-                return retValNode.item;
+                currentTask = retValNode.item;
+
+                return currentTask;
             }
         }
     }
