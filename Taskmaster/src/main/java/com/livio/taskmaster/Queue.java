@@ -59,7 +59,7 @@ public class Queue {
                 if(task == currentTask){
                     currentTask = null;
                 }
-                if (unblockNextTask()) {
+                if (prepareNextTask()) {
 
                     if (callback != null) {
                         //Alert that there is a new task ready
@@ -82,22 +82,35 @@ public class Queue {
     }
 
 
-    boolean unblockNextTask() {
+    boolean prepareNextTask() {
         synchronized (TASKS_LOCK) {
             if (head != null) {
-                TaskmasterLogger.v(TAG, "unblockNextTask: Attempting to unblock a task for queue " + name);
+                TaskmasterLogger.v(TAG, "prepareNextTask: Attempting to unblock a task for queue " + name);
                 Task nextTask = head.item;
 
-                if (currentTask == null && nextTask != null && (nextTask.getState() == Task.BLOCKED || nextTask.getState() == Task.READY)) {
-                    nextTask.switchStates(Task.READY);
-                    nextTask.setCallback(taskCallback);
-                    TaskmasterLogger.v(TAG, "unblockNextTask: Unblocked a task for queue " + name);
+                if(nextTask != null){
+                    int taskState = nextTask.getState();
+                    while ( head != null && taskState != Task.READY ){
+                        if(taskState == Task.CANCELED){
+                            TaskmasterLogger.v(TAG, nextTask.name + " task was canceled, dropping.");
+                            //move to next task
+                            head = head.next;
+                            if(head == null){
+                                tail = null;
+                            }else{
+                                taskState = head.item.getState();
 
-                    return true;
+                            }
+                        }else if( taskState == Task.BLOCKED){
+                            nextTask.switchStates(Task.READY);
+                            break;
+                        }
+                    }
+                    return head != null && head.item.getState() == Task.READY;
                 }
             }
         }
-        TaskmasterLogger.v(TAG, "unblockNextTask: Failed to unblock a task for queue " + name);
+        TaskmasterLogger.v(TAG, "prepareNextTask: Failed to unblock a task for queue " + name);
 
         return false;
     }
@@ -174,7 +187,7 @@ public class Queue {
         }
         if ((head == tail  || placeAtHead ) && currentTask == null) { //If there's either only one task or a new head, we need to set it to ready
             //there is only one task on the stack
-            if (unblockNextTask() && callback != null) {
+            if (prepareNextTask() && callback != null) {
                 TaskmasterLogger.v(TAG, "pushaddTask: Alerting task master");
 
                 //Alert that there is a new task ready
@@ -190,7 +203,7 @@ public class Queue {
      */
     public Task poll() {
         synchronized (TASKS_LOCK) {
-            if (head == null ) {
+            if ( head == null ) {
                 TaskmasterLogger.i(TAG, "Poll: head is null");
                 return null;
             } else if ( head.item.getState() != Task.READY) {
@@ -217,6 +230,10 @@ public class Queue {
                 head = newHead;
 
                 currentTask = retValNode.item;
+
+                if ( currentTask != null ) {
+                    currentTask.setCallback(taskCallback);
+                }
 
                 return currentTask;
             }

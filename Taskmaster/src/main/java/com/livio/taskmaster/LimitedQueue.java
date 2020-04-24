@@ -34,7 +34,7 @@ public class LimitedQueue extends Queue {
                 }
             }
         }
-        unblockNextTask();
+        prepareNextTask();
     }
 
     @SuppressWarnings("unused")
