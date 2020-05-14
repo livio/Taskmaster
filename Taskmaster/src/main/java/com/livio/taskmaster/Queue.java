@@ -5,7 +5,7 @@ public class Queue {
 
     private static final String TAG = "Queue";
 
-    final Object TASKS_LOCK;
+    final Object TASKS_LOCK, PAUSE_LOCK;
     final String name;
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final int id;
@@ -17,10 +17,12 @@ public class Queue {
     Node<Task> head;
     private Node<Task> tail;
     private Task currentTask = null;
+    private boolean isPaused = false;
 
 
     public Queue(String name, int id, boolean asynchronous, final IQueue callback) {
         TASKS_LOCK = new Object();
+        PAUSE_LOCK = new Object();
         this.name = name;
         this.id = id;
         this.asynchronous = asynchronous;
@@ -32,7 +34,7 @@ public class Queue {
                 switch (newState) {
                     case Task.IN_PROGRESS:
                         if(Queue.this.asynchronous){
-                            TaskmasterLogger.w(TAG, task.name + " task is in progress and queue is asynchronous");
+                            TaskmasterLogger.w(TAG, task.name + " task is in advance and queue is asynchronous");
                             handleCompletedTask(task);
                         }
                         break;
@@ -45,7 +47,7 @@ public class Queue {
                         handleCompletedTask(task);
                         break;
                     case Task.CANCELED:
-                        //This will only be called when the task was in progress, but canceled at some point
+                        //This will only be called when the task was in advance, but canceled at some point
                         TaskmasterLogger.w(TAG, task.name + " task was canceled during operation");
                         handleCompletedTask(task);
                         break;
@@ -54,21 +56,15 @@ public class Queue {
 
             private void handleCompletedTask(final Task task){
 
-                task.setCallback(null);
+                if(task != null){
+                    task.setCallback(null);
+                }
 
                 if(task == currentTask){
                     currentTask = null;
                 }
-                if (prepareNextTask()) {
 
-                    if (callback != null) {
-                        //Alert that there is a new task ready
-                        callback.onTaskReady(Queue.this);
-                    }
-
-                } else if (head == null) {
-                    onQueueEmpty();
-                }
+                advance();
             }
         };
     }
@@ -111,6 +107,26 @@ public class Queue {
             }
         }
         TaskmasterLogger.v(TAG, "prepareNextTask: Failed to unblock a task for queue " + name);
+
+        return false;
+    }
+
+    /**
+     * This method will try to move the queue forward
+     * @return
+     */
+    private boolean advance(){
+        if (prepareNextTask()) {
+
+            if (callback != null) {
+                //Alert that there is a new task ready
+                callback.onTaskReady(Queue.this);
+            }
+            return true;
+
+        } else if (head == null) {
+            onQueueEmpty();
+        }
 
         return false;
     }
@@ -202,6 +218,13 @@ public class Queue {
      * @return the current head of the queue
      */
     public Task poll() {
+
+        synchronized (PAUSE_LOCK){
+            if(isPaused){
+                return null;
+            }
+        }
+
         synchronized (TASKS_LOCK) {
             if ( head == null ) {
                 TaskmasterLogger.i(TAG, "Poll: head is null");
@@ -239,6 +262,21 @@ public class Queue {
             }
         }
     }
+
+    public void pause(){
+       synchronized (PAUSE_LOCK){
+           isPaused = true;
+       }
+    }
+
+    public void resume(){
+        synchronized (PAUSE_LOCK){
+            isPaused = false;
+        }
+
+        advance();
+    }
+
 
     /**
      * Peeks at the current head of the queue without removing it
