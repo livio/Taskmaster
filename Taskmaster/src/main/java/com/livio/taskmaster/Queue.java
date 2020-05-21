@@ -1,6 +1,9 @@
 package com.livio.taskmaster;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Queue {
 
     private static final String TAG = "Queue";
@@ -277,6 +280,92 @@ public class Queue {
         advance();
     }
 
+
+    public Task deleteTask(String name){
+        Task removedTask = null;
+        synchronized (TASKS_LOCK) {
+            removedTask = searchAndDestroy(name, true);
+        }
+
+        if (removedTask != null && removedTask.getState() == Task.READY){
+            removedTask.setCallback(null);
+            advance();
+        }
+
+        return removedTask;
+    }
+
+    public void clear(){
+        synchronized (TASKS_LOCK) {
+            head = null;
+            tail = null;
+            onQueueEmpty();
+        }
+    }
+
+    public Task getTask(String name){
+        synchronized (TASKS_LOCK) {
+            return searchAndDestroy(name, false);
+        }
+    }
+
+    /**
+     * This will returned a copied list of the Tasks in this queue. The list itself will not honor
+     * any modifications performed on it. However, the references to the Tasks themselves are the same as
+     * in the queue. Therefore, the queue API should be used for any modifications to those Tasks to ensure
+     * thread safety.
+     * @return a list of the current tasks
+     */
+    public List<Task> getTasksAsList(){
+        synchronized (TASKS_LOCK) {
+            Node current = head;    //Initialize current
+            List<Task> list = new ArrayList<>();
+            while (current != null) {
+                list.add((Task)current.item);
+                current = current.next;
+            }
+            return list;
+        }
+    }
+
+    /**
+     * A simple method to traverse the linked nodes and find a specific task
+     * @param name String name of the task being searched for
+     * @param shouldRemove true if the task should be removed from the list
+     * @return the found task
+     */
+    private Task searchAndDestroy(String name, boolean shouldRemove){
+        Node current = head;    //Initialize current
+        while (current != null) {
+
+            if (current.item != null && ( (Task) current.item).getName().equals(name)) {
+                //Task has been found
+
+                if (shouldRemove) {
+
+                    if (current.prev != null) {
+                        current.prev.next = current.next;
+                    }else{
+                        //That means this is the head
+                        head = current.next;
+                    }
+
+                    if (current.next != null) {
+                        current.next.prev = current.prev;
+                    }
+
+                    //Clear no longer linked nodes
+                    current.prev = null;
+                    current.next = null;
+                }
+
+                return (Task) current.item;    //data found
+            }
+            current = current.next;
+        }
+
+        return null;
+    }
 
     /**
      * Peeks at the current head of the queue without removing it
