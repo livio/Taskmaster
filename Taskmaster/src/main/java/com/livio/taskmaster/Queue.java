@@ -1,11 +1,14 @@
 package com.livio.taskmaster;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Queue {
 
     private static final String TAG = "Queue";
 
-    final Object TASKS_LOCK;
+    final Object TASKS_LOCK, PAUSE_LOCK;
     final String name;
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final int id;
@@ -17,10 +20,12 @@ public class Queue {
     Node<Task> head;
     private Node<Task> tail;
     private Task currentTask = null;
+    private boolean isPaused = false;
 
 
     public Queue(String name, int id, boolean asynchronous, final IQueue callback) {
         TASKS_LOCK = new Object();
+        PAUSE_LOCK = new Object();
         this.name = name;
         this.id = id;
         this.asynchronous = asynchronous;
@@ -32,7 +37,7 @@ public class Queue {
                 switch (newState) {
                     case Task.IN_PROGRESS:
                         if(Queue.this.asynchronous){
-                            TaskmasterLogger.w(TAG, task.name + " task is in progress and queue is asynchronous");
+                            TaskmasterLogger.w(TAG, task.name + " task is in advance and queue is asynchronous");
                             handleCompletedTask(task);
                         }
                         break;
@@ -45,7 +50,7 @@ public class Queue {
                         handleCompletedTask(task);
                         break;
                     case Task.CANCELED:
-                        //This will only be called when the task was in progress, but canceled at some point
+                        //This will only be called when the task was in advance, but canceled at some point
                         TaskmasterLogger.w(TAG, task.name + " task was canceled during operation");
                         handleCompletedTask(task);
                         break;
@@ -54,21 +59,15 @@ public class Queue {
 
             private void handleCompletedTask(final Task task){
 
-                task.setCallback(null);
+                if(task != null){
+                    task.setCallback(null);
+                }
 
                 if(task == currentTask){
                     currentTask = null;
                 }
-                if (prepareNextTask()) {
 
-                    if (callback != null) {
-                        //Alert that there is a new task ready
-                        callback.onTaskReady(Queue.this);
-                    }
-
-                } else if (head == null) {
-                    onQueueEmpty();
-                }
+                advance();
             }
         };
     }
@@ -111,6 +110,26 @@ public class Queue {
             }
         }
         TaskmasterLogger.v(TAG, "prepareNextTask: Failed to unblock a task for queue " + name);
+
+        return false;
+    }
+
+    /**
+     * This method will try to move the queue forward
+     * @return
+     */
+    private boolean advance(){
+        if (prepareNextTask()) {
+
+            if (callback != null) {
+                //Alert that there is a new task ready
+                callback.onTaskReady(Queue.this);
+            }
+            return true;
+
+        } else if (head == null) {
+            onQueueEmpty();
+        }
 
         return false;
     }
@@ -202,6 +221,13 @@ public class Queue {
      * @return the current head of the queue
      */
     public Task poll() {
+
+        synchronized (PAUSE_LOCK){
+            if(isPaused){
+                return null;
+            }
+        }
+
         synchronized (TASKS_LOCK) {
             if ( head == null ) {
                 TaskmasterLogger.i(TAG, "Poll: head is null");
@@ -238,6 +264,107 @@ public class Queue {
                 return currentTask;
             }
         }
+    }
+
+    public void pause(){
+       synchronized (PAUSE_LOCK){
+           isPaused = true;
+       }
+    }
+
+    public void resume(){
+        synchronized (PAUSE_LOCK){
+            isPaused = false;
+        }
+
+        advance();
+    }
+
+
+    public Task deleteTask(String name){
+        Task removedTask = null;
+        synchronized (TASKS_LOCK) {
+            removedTask = searchAndDestroy(name, true);
+        }
+
+        if (removedTask != null && removedTask.getState() == Task.READY){
+            removedTask.setCallback(null);
+            advance();
+        }
+
+        return removedTask;
+    }
+
+    public void clear(){
+        synchronized (TASKS_LOCK) {
+            head = null;
+            tail = null;
+            onQueueEmpty();
+        }
+    }
+
+    public Task getTask(String name){
+        synchronized (TASKS_LOCK) {
+            return searchAndDestroy(name, false);
+        }
+    }
+
+    /**
+     * This will returned a copied list of the Tasks in this queue. The list itself will not honor
+     * any modifications performed on it. However, the references to the Tasks themselves are the same as
+     * in the queue. Therefore, the queue API should be used for any modifications to those Tasks to ensure
+     * thread safety.
+     * @return a list of the current tasks
+     */
+    public List<Task> getTasksAsList(){
+        synchronized (TASKS_LOCK) {
+            Node current = head;    //Initialize current
+            List<Task> list = new ArrayList<>();
+            while (current != null) {
+                list.add((Task)current.item);
+                current = current.next;
+            }
+            return list;
+        }
+    }
+
+    /**
+     * A simple method to traverse the linked nodes and find a specific task
+     * @param name String name of the task being searched for
+     * @param shouldRemove true if the task should be removed from the list
+     * @return the found task
+     */
+    private Task searchAndDestroy(String name, boolean shouldRemove){
+        Node current = head;    //Initialize current
+        while (current != null) {
+
+            if (current.item != null && ( (Task) current.item).getName().equals(name)) {
+                //Task has been found
+
+                if (shouldRemove) {
+
+                    if (current.prev != null) {
+                        current.prev.next = current.next;
+                    }else{
+                        //That means this is the head
+                        head = current.next;
+                    }
+
+                    if (current.next != null) {
+                        current.next.prev = current.prev;
+                    }
+
+                    //Clear no longer linked nodes
+                    current.prev = null;
+                    current.next = null;
+                }
+
+                return (Task) current.item;    //data found
+            }
+            current = current.next;
+        }
+
+        return null;
     }
 
     /**
