@@ -3,6 +3,7 @@ package com.livio.taskmaster;
 /**
  * Implement this interface to define how logging should happen
  */
+@SuppressWarnings("unused")
 public interface ITaskmasterLogger {
 
 
@@ -15,5 +16,6 @@ public interface ITaskmasterLogger {
     void w(String tag, String message);
 
     void e(String tag, String message);
+
     void e(String tag, String message, Exception e);
 }

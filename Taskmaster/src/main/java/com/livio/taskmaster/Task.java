@@ -1,7 +1,7 @@
 package com.livio.taskmaster;
 
 
-public abstract class Task implements Runnable{
+public abstract class Task implements Runnable {
 
     private static final String TAG = "Task";
     private static final long DELAY_CONSTANT = 500; //250ms
@@ -15,63 +15,68 @@ public abstract class Task implements Runnable{
     public static final int ERROR = 0xFF;
 
     private final Object STATE_LOCK;
+    private final long timestamp;
 
-    int state;
-    long timestamp;
-    ITask callback;
+    private int state;
+    private ITask callback;
     final String name;
 
 
-    public  Task(String name){
+    public Task(String name) {
         timestamp = System.currentTimeMillis();
         STATE_LOCK = new Object();
         switchStates(BLOCKED);
         this.name = name;
+        if(name == null){
+            throw new NullPointerException("Name can't be null");
+        }
     }
 
-    protected void switchStates(int newState){
+    void switchStates(int newState) {
         TaskmasterLogger.v(TAG, name + " switchStates: " + state);
         int oldState = state;
-        synchronized (STATE_LOCK){
+        synchronized (STATE_LOCK) {
             state = newState;
         }
 
-        if(callback != null){
+        if (callback != null) {
             callback.onStateChanged(this, oldState, state);
         }
     }
 
-    protected void setCallback(ITask callback){
+    void setCallback(ITask callback) {
         this.callback = callback;
     }
-    protected void onError(){
+
+    protected void onError() {
         switchStates(ERROR);
     }
 
-    protected void onFinished(){
+    protected void onFinished() {
         switchStates(FINISHED);
     }
 
 
-    public int getState(){
-        synchronized (STATE_LOCK){
+    public int getState() {
+        synchronized (STATE_LOCK) {
             return state;
         }
     }
-    public String getName(){
+
+    public String getName() {
         return this.name;
     }
 
     //Currently just tracks how long this task has been waiting
-    public long getWeight(long currentTime){
-        return ((((currentTime-timestamp) + DELAY_CONSTANT) * DELAY_COEF ));
+    public long getWeight(long currentTime) {
+        return ((((currentTime - timestamp) + DELAY_CONSTANT) * DELAY_COEF));
 
     }
 
     @Override
     public final void run() {
-        synchronized (STATE_LOCK){
-            if(state != READY){
+        synchronized (STATE_LOCK) {
+            if (state != READY) {
                 TaskmasterLogger.w(TAG, "run() called while not in state READY. Actual state: " + state);
                 return;
             }
@@ -86,16 +91,16 @@ public abstract class Task implements Runnable{
 
     //TODO add a way to cancel the task
 
-    public void cancelTask(){
+    public void cancelTask() {
         switchStates(CANCELED);
     }
-
 
 
     //This method should be implemented by the child class and will be called once a thread is ready to run the task
     public abstract void onExecute();
 
-    public interface ITask{
+    public interface ITask {
+        @SuppressWarnings("unused")
         void onStateChanged(Task task, int previous, int newState);
     }
 

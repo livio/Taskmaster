@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Currently each queue is going to be a serial queue.
@@ -22,25 +23,28 @@ public class Taskmaster {
     private final Queue.IQueue queueCallback;
 
 
-    private boolean shouldBeDameon = false, debugEnabled = false;
+    private boolean shouldBeDaemon = false, debugEnabled = false;
+    @SuppressWarnings("unused")
     private TaskmasterLogger taskMasterLogger;
     private ExecutorService executorService;
 
-    public Taskmaster(){
+    private Taskmaster() {
         QUEUE_LOCK = new Object();
         queues = new Vector<>();
         taskmasterThread = new TaskmasterThread();
         queueCallback = new Queue.IQueue() {
             @Override
             public void onTaskReady(Queue queue) {
-                if(taskmasterThread != null){
+                TaskmasterLogger.i(TAG, "Task ready from queue " + queue.getName());
+                //noinspection ConstantConditions
+                if (taskmasterThread != null) {
                     taskmasterThread.alert();
                 }
             }
 
             @Override
-            public void onQueueClosed(Queue queue){
-                synchronized (QUEUE_LOCK){
+            public void onQueueClosed(Queue queue) {
+                synchronized (QUEUE_LOCK) {
                     queues.remove(queue);
                 }
 
@@ -50,60 +54,59 @@ public class Taskmaster {
 
     //Init
 
-    protected void initThreadPool(int threadCount){
-        if(threadCount > 1){
+    private void initThreadPool(int threadCount) {
+        if (threadCount > 1) {
             executorService = Executors.newFixedThreadPool(threadCount);
-        }else if (threadCount == 1){
+        } else if (threadCount == 1) {
             executorService = Executors.newSingleThreadExecutor();
-        }else{
+        } else {
             //Unbound limit of threads
             executorService = Executors.newCachedThreadPool();
         }
     }
 
 
-
     //Public API
 
-    public synchronized void start(){
-        if(taskmasterThread != null){
+    public synchronized void start() {
+        if (taskmasterThread != null) {
             taskmasterThread.start();
         }
     }
 
-    public synchronized void shutdown(){
-        if(taskmasterThread != null){
+    public synchronized void shutdown() {
+        if (taskmasterThread != null) {
             taskmasterThread.close();
         }
-        if(executorService != null){
+        if (executorService != null) {
             executorService.shutdown();
         }
     }
 
-    public Queue createQueue(String name, int id){
+    public Queue createQueue(String name, int id, boolean asynchronous) {
         synchronized (QUEUE_LOCK) {
-            Queue queue = new Queue(name, id, queueCallback);
+            Queue queue = new Queue(name, id, asynchronous, queueCallback);
             queues.add(queue);
             return queue;
         }
 
     }
 
-    public LimitedQueue createLimitedQueue(String name, int id, List<Task> tasks){
+    public LimitedQueue createLimitedQueue(String name, int id, List<Task> tasks) {
         LimitedQueue queue;
         synchronized (QUEUE_LOCK) {
-            queue = new LimitedQueue(name, id, tasks, queueCallback);
+            queue = new LimitedQueue(name, id, tasks, false, queueCallback);
             queues.add(queue);
         }
-        if(taskmasterThread != null){
+        if (taskmasterThread != null) {
             //Try to alert the task master thread to start churning through tasks if necessary
             taskmasterThread.alert();
         }
         return queue;
     }
 
-    protected Task getNextTask(){
-        TaskmasterLogger.v(TAG,"Getting next task");
+    private Task getNextTask() {
+        TaskmasterLogger.v(TAG, "Getting next task");
 
         final long currentTime = System.currentTimeMillis();
 
@@ -111,19 +114,19 @@ public class Taskmaster {
 
         long currentPriority = -Long.MAX_VALUE, peekWeight;
 
-        synchronized(QUEUE_LOCK){
+        synchronized (QUEUE_LOCK) {
 
-            if(queues == null || queues.isEmpty()){
-               // System.out.println("No queues available");
+            if (queues == null || queues.isEmpty()) {
+                // System.out.println("No queues available");
                 return null;
             }
 
             Task peekTask;
             for (Queue queue : queues) {
                 peekTask = queue.peekNextTask();
-                if(peekTask != null && peekTask.getState() == Task.READY){
+                if (peekTask != null && peekTask.getState() == Task.READY) {
                     peekWeight = peekTask.getWeight(currentTime);
-                    if(peekWeight > currentPriority ){
+                    if (peekWeight > currentPriority) {
                         currentPriority = peekWeight;
                         priorityQueue = queue;
                     }
@@ -131,7 +134,7 @@ public class Taskmaster {
             }
 
             if (priorityQueue != null) {
-                TaskmasterLogger.v(TAG,"Priority queue is " + priorityQueue.name);
+                TaskmasterLogger.v(TAG, "Priority queue is " + priorityQueue.name);
                 return priorityQueue.poll();
             }
         }
@@ -140,29 +143,30 @@ public class Taskmaster {
     }
 
 
-    private class TaskmasterThread extends Thread{
-        protected final  Object TASK_THREAD_LOCK = new Object();
+    private class TaskmasterThread extends Thread {
+        final Object TASK_THREAD_LOCK = new Object();
         private boolean isHalted = false, isWaiting = false;
 
-        public TaskmasterThread(){
+        TaskmasterThread() {
             this.setName("TaskmasterThread");
-            this.setDaemon(shouldBeDameon);
+            this.setDaemon(shouldBeDaemon);
         }
 
 
         @Override
         public void run() {
             while (!isHalted) {
-                try{
+                try {
                     Task task;
-                    synchronized(TASK_THREAD_LOCK) {
+                    synchronized (TASK_THREAD_LOCK) {
                         task = getNextTask();
                         if (task != null) {
-                            TaskmasterLogger.d(TAG,"Submitting task to executor service");
+                            TaskmasterLogger.d(TAG, "Submitting task to executor service");
 
                             //There is a task that needs to be executed
                             //Find a thread to run this on
                             executorService.submit(task);
+
                             //FIXME we might want to switch this to a better managed system
                             //For example, this method simply takes all queues and processes them
 
@@ -182,54 +186,54 @@ public class Taskmaster {
             }
         }
 
-        private void alert(){
+        private void alert() {
 
-            if(isWaiting){
-                synchronized(TASK_THREAD_LOCK){
+            if (isWaiting) {
+                synchronized (TASK_THREAD_LOCK) {
                     TASK_THREAD_LOCK.notify();
                 }
             }
         }
 
-        private void close(){
+        private void close() {
             this.isHalted = true;
             alert();
         }
     }
 
 
-    public static class Builder{
-        Taskmaster taskMaster;
+    public static class Builder {
+        final Taskmaster taskMaster;
         int threadCount;
         ITaskmasterLogger logger;
 
-        public Builder(){
+        public Builder() {
             taskMaster = new Taskmaster();
         }
 
         //there is a diminishing return once thread count >= queue count
-        public Builder setThreadCount(int threadCount){
+        public Builder setThreadCount(int threadCount) {
             this.threadCount = threadCount;
             return this;
         }
 
-        public Builder shouldBeDameon(boolean shouldBeDameon){
-            taskMaster.shouldBeDameon = shouldBeDameon;
+        public Builder shouldBeDaemon(boolean shouldBeDaemon) {
+            taskMaster.shouldBeDaemon = shouldBeDaemon;
             return this;
         }
 
-        public Builder setTaskMasterLogger(ITaskmasterLogger taskMasterLogger){
+        public Builder setTaskMasterLogger(ITaskmasterLogger taskMasterLogger) {
             this.logger = taskMasterLogger;
             return this;
         }
 
-        public Builder enableDebug(boolean enableDebug){
+        public Builder enableDebug(boolean enableDebug) {
             taskMaster.debugEnabled = enableDebug;
             return this;
         }
 
 
-        public Taskmaster build(){
+        public Taskmaster build() {
 
             taskMaster.taskMasterLogger = new TaskmasterLogger(logger);
             TaskmasterLogger.enableLogs(taskMaster.debugEnabled);

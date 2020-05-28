@@ -13,7 +13,11 @@ import java.util.Random;
 public class Tests {
 
     public static void main(String[] args) {
-        startTheMachine(args);
+        //simpleTest();
+
+        testQueueModificaitons();
+        //startTheMachine();
+
 
         /* If you want to test the daemon setting use something like the following
         new Thread(new Runnable(){
@@ -32,29 +36,48 @@ public class Tests {
         }).start();
         */
     }
+    public static void simpleTest() {
+        //Build the task master instance
+        Taskmaster.Builder builder = new Taskmaster.Builder();
+        builder.setThreadCount(2);
+        builder.shouldBeDaemon(false);
+        builder.setTaskMasterLogger(new Logger());
+        builder.enableDebug(true);
+        taskmaster = builder.build();
+        taskmaster.start();
+
+        Queue syncQueue = taskmaster.createQueue("Queue 5", 5, true);
+        syncQueue.add(generateTask("51"), false);
+        syncQueue.add(generateTask("52"), false);
+        syncQueue.add(generateTask("53"), true);
+        syncQueue.add(generateTask("54"), false);
+        syncQueue.add(generateTask("55"), false);
+        syncQueue.add(generateTask("56"), true);
+    }
+
     static int completed = 0;
     static final long startTime = System.currentTimeMillis();
     static Taskmaster taskmaster;
     static List<String> taskNames = new ArrayList<>();
     static Queue q1, q2;
-    public static void startTheMachine(String[] args) {
+
+    public static void startTheMachine() {
 
         //Build the task master instance
         Taskmaster.Builder builder = new Taskmaster.Builder();
-        builder.setThreadCount(-1);
-        builder.shouldBeDameon(false);
+        builder.setThreadCount(3);
+        builder.shouldBeDaemon(false);
         builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
-
 
 
         taskmaster = builder.build();
         taskmaster.start();
 
-        q1 = taskmaster.createQueue("Queue 1", 1);
-        q2 = taskmaster.createQueue("Queue 2", 2);
-        Queue q3 = taskmaster.createQueue("Queue 3", 3);
-        Queue q5 = taskmaster.createQueue("Queue 5", 5);
+        q1 = taskmaster.createQueue("Queue 1", 1, true);
+        q2 = taskmaster.createQueue("Queue 2", 2, false);
+        Queue q3 = taskmaster.createQueue("Queue 3", 3,true);
+        Queue q5 = taskmaster.createQueue("Queue 5", 5,false);
 
 
         q1.add(generateTask("1"), false);
@@ -96,9 +119,10 @@ public class Tests {
     static double totalSleep = 0;
     static int numberOfGeneratedTasks = 0;
     static HashSet<String> threads = new HashSet<>();
-    static Task generateTask(String name){
+
+    static Task generateTask(final String name) {
         numberOfGeneratedTasks++;
-        return  new Task(name){
+        return new Task(name) {
             @Override
             public void onExecute() {
 
@@ -106,7 +130,7 @@ public class Tests {
 
                 double sleep = new Random().nextInt(5) * 250;
                 System.out.println("Sleeping for " + sleep);
-                if(name.equals("33")){
+                if (name.equals("33")) {
                     synchronized (COUNT_LOCK) {
                         completed++;
                         taskNames.add(this.getName());
@@ -115,24 +139,24 @@ public class Tests {
 
                     return;
                 }
-                synchronized (SLEEP_LOCK){
+                synchronized (SLEEP_LOCK) {
                     totalSleep += sleep;
                 }
-                try{
-                    Thread.sleep((long)(sleep));
-                }catch (Exception e){
+                try {
+                    Thread.sleep((long) (sleep));
+                } catch (Exception e) {
                     e.printStackTrace();
                     this.onError();
                 }
                 System.out.println("Task finished " + name);
 
                 this.onFinished();
-                if(this.getName().equals("3")){
+                if (this.getName().equals("3")) {
                     System.out.println(" Closing queue 1");
 
                     q1.close();
                     synchronized (COUNT_LOCK) {
-                        numberOfGeneratedTasks-=2;
+                        numberOfGeneratedTasks -= 2;
                     }
                     q2.add(generateTask("25"), false);
                     q2.add(generateTask("26"), false);
@@ -143,14 +167,14 @@ public class Tests {
                     completed++;
                     taskNames.add(this.getName());
                     System.out.println("Completed number " + completed);
-                    if(completed == numberOfGeneratedTasks){
+                    if (completed == numberOfGeneratedTasks) {
                         System.out.println("Sleeps totaled:: " + (totalSleep));
                         System.out.println("Finished all tasks in: " + (System.currentTimeMillis() - startTime));
                         System.out.println("Used # threads: " + threads.size());
 
                         StringBuilder builder = new StringBuilder();
                         builder.append("Completion Order: ");
-                        for(String name : taskNames){
+                        for (String name : taskNames) {
                             builder.append(name);
                             builder.append(", ");
                         }
@@ -163,6 +187,60 @@ public class Tests {
         };
     }
 
+    public static void testQueueModificaitons(){
+        Taskmaster.Builder builder = new Taskmaster.Builder();
+        builder.setThreadCount(2);
+        builder.shouldBeDaemon(false);
+        builder.setTaskMasterLogger(new Logger());
+        builder.enableDebug(true);
+        taskmaster = builder.build();
+        //taskmaster.start();
+
+        Queue syncQueue = taskmaster.createQueue("Queue 5", 5, true);
+        syncQueue.add(generateTask("51"), false);
+        syncQueue.add(generateTask("52"), false);
+        syncQueue.add(generateTask("53"), true);
+        syncQueue.add(generateTask("54"), false);
+        syncQueue.add(generateTask("55"), false);
+        syncQueue.add(generateTask("56"), true);
+
+        List<Task> tasks = syncQueue.getTasksAsList();
+        for(Task task : tasks){
+            System.out.println("Task in queue: " + task.getName());
+        }
+
+        //Test getting a task
+        Task getTask = syncQueue.getTask("54");
+        System.out.println("Get task: " + getTask.getName());
+
+        //Test deleting a task
+        Task delTask = syncQueue.deleteTask("54");
+        System.out.println("Deleted task: " + delTask.getName());
+
+        tasks = syncQueue.getTasksAsList();
+        for(Task task : tasks){
+            System.out.println("Task in queue: " + task.getName());
+        }
+
+        //Test removing head
+        Task peekTask = syncQueue.peekNextTask();
+        delTask = syncQueue.deleteTask(peekTask.getName());
+        System.out.println("Deleted head task: " + delTask.getName());
+        System.out.println("Head task state: " + syncQueue.peekNextTask().getState());
+
+        tasks = syncQueue.getTasksAsList();
+        for(Task task : tasks){
+            System.out.println("Task in queue: " + task.getName());
+        }
+
+        syncQueue.clear();
+        tasks = syncQueue.getTasksAsList();
+        System.out.println("Clear tasks in queue: " + tasks.size());
+
+        for(Task task : tasks){
+            System.out.println("Task in queue: " + task.getName());
+        }
+    }
 
 
     //Create logging interface

@@ -1,54 +1,55 @@
 package com.livio.taskmaster;
 
+@SuppressWarnings("ALL")
 class TaskmasterLogger {
 
-    protected static ITaskmasterLogger logger;
-    protected static boolean logsEnabled = false;
+    private static ITaskmasterLogger logger;
+    private static boolean logsEnabled = false;
 
-    TaskmasterLogger(ITaskmasterLogger logger){
-        if(TaskmasterLogger.logger != null) {
+    TaskmasterLogger(ITaskmasterLogger logger) {
+        if (TaskmasterLogger.logger != null) {
             throw new IllegalStateException("Already initialized with logger");
-        } else{
-            this.logger = logger;
+        } else {
+            TaskmasterLogger.logger = logger;
         }
     }
 
-    static void enableLogs(boolean enableLogs){
+    static void enableLogs(boolean enableLogs) {
         TaskmasterLogger.logsEnabled = enableLogs;
     }
 
-    static void v(String tag, String message){
-        if(logsEnabled && logger != null){
+    static void v(String tag, String message) {
+        if (logsEnabled && logger != null) {
             logger.v(tag, message);
         }
     }
 
-    static void d(String tag, String message){
-        if(logsEnabled && logger != null){
-            logger.v(tag, message);
+    static void d(String tag, String message) {
+        if (logsEnabled && logger != null) {
+            logger.d(tag, message);
         }
     }
 
-    static void i(String tag, String message){
-        if(logsEnabled && logger != null){
-            logger.v(tag, message);
+    static void i(String tag, String message) {
+        if (logsEnabled && logger != null) {
+            logger.i(tag, message);
         }
     }
 
-    static void w(String tag, String message){
-        if(logsEnabled && logger != null){
-            logger.v(tag, message);
+    static void w(String tag, String message) {
+        if (logsEnabled && logger != null) {
+            logger.w(tag, message);
         }
     }
 
-    static void e(String tag, String message){
-        if(logsEnabled && logger != null){
-            logger.v(tag, message);
+    static void e(String tag, String message) {
+        if (logsEnabled && logger != null) {
+            logger.e(tag, message);
         }
     }
 
-    static void e(String tag, String message, Exception e){
-        if(logsEnabled && logger != null){
+    static void e(String tag, String message, Exception e) {
+        if (logsEnabled && logger != null) {
             logger.e(tag, message, e);
         }
     }
