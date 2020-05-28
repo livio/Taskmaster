@@ -1,7 +1,7 @@
 apply plugin: 'java-library'
 
 group 'com.livio.taskmaster'
-version '0.1'
+version '0.2'
 
 sourceCompatibility = 1.7
 
