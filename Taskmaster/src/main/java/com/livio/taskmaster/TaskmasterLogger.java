@@ -38,7 +38,7 @@ class TaskmasterLogger {
     private static ITaskmasterLogger logger;
     private static boolean logsEnabled = false;
 
-    TaskmasterLogger(ITaskmasterLogger logger) {
+    static void initTaskmasterLogger(ITaskmasterLogger logger) {
         if (TaskmasterLogger.logger != null) {
             throw new IllegalStateException("Already initialized with logger");
         } else {

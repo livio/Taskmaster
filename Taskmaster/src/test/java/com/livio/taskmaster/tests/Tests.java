@@ -45,6 +45,9 @@ import java.util.Random;
 public class Tests {
 
     public static void main(String[] args) {
+
+        Taskmaster.setLogger(new Logger());
+
         //simpleTest();
 
         testQueueModificaitons();
@@ -73,7 +76,6 @@ public class Tests {
         Taskmaster.Builder builder = new Taskmaster.Builder();
         builder.setThreadCount(2);
         builder.shouldBeDaemon(false);
-        builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
         taskmaster = builder.build();
         taskmaster.start();
@@ -99,7 +101,6 @@ public class Tests {
         Taskmaster.Builder builder = new Taskmaster.Builder();
         builder.setThreadCount(3);
         builder.shouldBeDaemon(false);
-        builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
 
 
@@ -223,7 +224,6 @@ public class Tests {
         Taskmaster.Builder builder = new Taskmaster.Builder();
         builder.setThreadCount(2);
         builder.shouldBeDaemon(false);
-        builder.setTaskMasterLogger(new Logger());
         builder.enableDebug(true);
         taskmaster = builder.build();
         //taskmaster.start();
