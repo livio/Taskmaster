@@ -55,8 +55,6 @@ public class Taskmaster {
 
 
     private boolean shouldBeDaemon = false, debugEnabled = false;
-    @SuppressWarnings("unused")
-    private TaskmasterLogger taskMasterLogger;
     private ExecutorService executorService;
 
     private Taskmaster() {
@@ -98,6 +96,10 @@ public class Taskmaster {
 
 
     //Public API
+
+    public static void setLogger(ITaskmasterLogger logger){
+        TaskmasterLogger.initTaskmasterLogger(logger);
+    }
 
     public synchronized void start() {
         if (taskmasterThread != null) {
@@ -253,11 +255,6 @@ public class Taskmaster {
             return this;
         }
 
-        public Builder setTaskMasterLogger(ITaskmasterLogger taskMasterLogger) {
-            this.logger = taskMasterLogger;
-            return this;
-        }
-
         public Builder enableDebug(boolean enableDebug) {
             taskMaster.debugEnabled = enableDebug;
             return this;
@@ -266,7 +263,6 @@ public class Taskmaster {
 
         public Taskmaster build() {
 
-            taskMaster.taskMasterLogger = new TaskmasterLogger(logger);
             TaskmasterLogger.enableLogs(taskMaster.debugEnabled);
             taskMaster.initThreadPool(threadCount);
 
