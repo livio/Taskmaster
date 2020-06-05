@@ -80,6 +80,10 @@ public abstract class Task implements Runnable {
         this.callback = callback;
     }
 
+    ITask getCallback(){
+        return this.callback;
+    }
+
     protected void onError() {
         switchStates(ERROR);
     }
