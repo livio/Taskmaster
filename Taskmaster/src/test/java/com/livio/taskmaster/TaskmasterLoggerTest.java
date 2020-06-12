@@ -1,7 +1,5 @@
 package com.livio.taskmaster;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -16,7 +14,7 @@ public class TaskmasterLoggerTest {
     static TestLogger logger = new TestLogger();
 
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUp() {
         TaskmasterLogger.clearLogger();
         TaskmasterLogger.initTaskmasterLogger(logger);
         TaskmasterLogger.enableLogs(true);
