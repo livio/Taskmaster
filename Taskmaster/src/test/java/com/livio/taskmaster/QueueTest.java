@@ -20,13 +20,13 @@ public class QueueTest {
     Queue basicSyncQueue, basicAsyncQueue;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         taskmaster = TestUtilities.generateTaskMaster(2);
         initBasicQueues();
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         taskmaster.shutdown();
     }
 

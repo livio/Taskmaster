@@ -17,6 +17,7 @@ public class TaskmasterLoggerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
+        TaskmasterLogger.clearLogger();
         TaskmasterLogger.initTaskmasterLogger(logger);
         TaskmasterLogger.enableLogs(true);
     }

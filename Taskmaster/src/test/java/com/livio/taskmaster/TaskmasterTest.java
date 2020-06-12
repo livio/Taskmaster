@@ -14,6 +14,7 @@ public class TaskmasterTest {
 
     @Test
     public void setLogger() {
+        TaskmasterLogger.clearLogger();
         Taskmaster.setLogger(TestUtilities.generateSampleLogger());
 
         try{
