@@ -55,7 +55,7 @@ public class Queue {
     private boolean isPaused = false;
 
 
-    public Queue(String name, int id, boolean asynchronous, final IQueue callback) {
+    protected Queue(String name, int id, boolean asynchronous, final IQueue callback) {
         TASKS_LOCK = new Object();
         PAUSE_LOCK = new Object();
         this.name = name;
@@ -312,6 +312,12 @@ public class Queue {
         advance();
     }
 
+    boolean isPaused(){
+        synchronized (PAUSE_LOCK){
+            return isPaused;
+        }
+    }
+
 
     public Task deleteTask(String name){
         Task removedTask = null;
@@ -422,7 +428,8 @@ public class Queue {
                     current.item.onError();
                     current = current.next;
                 }
-
+                head = null;
+                tail = null;
             }
         }
         if (callback != null) {

@@ -35,14 +35,23 @@ package com.livio.taskmaster;
 @SuppressWarnings("ALL")
 class TaskmasterLogger {
 
+    private static final Object LOGGER_LOCK = new Object();
     private static ITaskmasterLogger logger;
     private static boolean logsEnabled = false;
 
     static void initTaskmasterLogger(ITaskmasterLogger logger) {
-        if (TaskmasterLogger.logger != null) {
-            throw new IllegalStateException("Already initialized with logger");
-        } else {
-            TaskmasterLogger.logger = logger;
+        synchronized (LOGGER_LOCK) {
+            if (TaskmasterLogger.logger != null) {
+                throw new IllegalStateException("Already initialized with logger");
+            } else {
+                TaskmasterLogger.logger = logger;
+            }
+        }
+    }
+
+    static void clearLogger(){
+        synchronized (LOGGER_LOCK) {
+            logger = null;
         }
     }
 
