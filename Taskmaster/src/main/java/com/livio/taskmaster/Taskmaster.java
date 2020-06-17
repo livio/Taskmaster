@@ -1,10 +1,41 @@
+/*
+ * Copyright (c) 2020 Livio, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the
+ * distribution.
+ *
+ * Neither the name of the Livio Inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software
+ * without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.livio.taskmaster;
 
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Currently each queue is going to be a serial queue.
@@ -24,8 +55,6 @@ public class Taskmaster {
 
 
     private boolean shouldBeDaemon = false, debugEnabled = false;
-    @SuppressWarnings("unused")
-    private TaskmasterLogger taskMasterLogger;
     private ExecutorService executorService;
 
     private Taskmaster() {
@@ -67,6 +96,10 @@ public class Taskmaster {
 
 
     //Public API
+
+    public static void setLogger(ITaskmasterLogger logger){
+        TaskmasterLogger.initTaskmasterLogger(logger);
+    }
 
     public synchronized void start() {
         if (taskmasterThread != null) {
@@ -222,11 +255,6 @@ public class Taskmaster {
             return this;
         }
 
-        public Builder setTaskMasterLogger(ITaskmasterLogger taskMasterLogger) {
-            this.logger = taskMasterLogger;
-            return this;
-        }
-
         public Builder enableDebug(boolean enableDebug) {
             taskMaster.debugEnabled = enableDebug;
             return this;
@@ -235,7 +263,6 @@ public class Taskmaster {
 
         public Taskmaster build() {
 
-            taskMaster.taskMasterLogger = new TaskmasterLogger(logger);
             TaskmasterLogger.enableLogs(taskMaster.debugEnabled);
             taskMaster.initThreadPool(threadCount);
 
