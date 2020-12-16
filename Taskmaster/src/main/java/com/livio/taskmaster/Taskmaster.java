@@ -156,6 +156,10 @@ public class Taskmaster {
 
             Task peekTask;
             for (Queue queue : queues) {
+                if (queue.isPaused()) {
+                    //Paused queues should be skipped.
+                    continue;
+                }
                 peekTask = queue.peekNextTask();
                 if (peekTask != null && peekTask.getState() == Task.READY) {
                     peekWeight = peekTask.getWeight(currentTime);

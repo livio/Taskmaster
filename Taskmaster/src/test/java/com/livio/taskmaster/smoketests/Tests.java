@@ -46,7 +46,7 @@ public class Tests {
             @Override
             public void onTestCompleted(boolean success) {
                 System.out.println("Finished simple test");
-                QueueModTest queueModTest = new QueueModTest(new BaseTest.ITest(){
+                QueueModTest queueModTest = new QueueModTest(new BaseTest.ITest() {
                     @Override
                     public void onTestCompleted(boolean success) {
                         System.out.println("Finished queue mod test");
@@ -56,10 +56,16 @@ public class Tests {
                             public void onTestCompleted(boolean success) {
                                 System.out.println("Finished big test");
 
+                                PauseTest pauseTest = new PauseTest(new BaseTest.ITest() {
+                                    @Override
+                                    public void onTestCompleted(boolean success) {
+                                        System.out.println("Finished pause test");
+                                    }
+                                });
+                                pauseTest.start();
                             }
                         });
                         bigTest.start();
-
                     }
                 });
                 queueModTest.start();
@@ -89,6 +95,7 @@ public class Tests {
 
         }).start();
         */
+
     }
 
 
