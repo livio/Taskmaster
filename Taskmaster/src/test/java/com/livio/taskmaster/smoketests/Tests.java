@@ -37,65 +37,72 @@ import com.livio.taskmaster.Taskmaster;
 
 public class Tests {
 
+    private final static int SIMPLE = 0;
+    private final static int QUEUE_MOD = 1;
+    private final static int BIG = 2;
+    private final static int PAUSE = 3;
+    private final static int CANCEL_TASK = 4;
+
     public static void main(String[] args) {
 
         Taskmaster.setLogger(new Logger());
 
-        //Need to fix the chaining requirement, but for smoke tests this should be fine
-        SimpleTest simpleTest = new SimpleTest(new BaseTest.ITest() {
+
+        BaseTest.ITest testCallback = new BaseTest.ITest() {
+            int testProgress = -1;
+
             @Override
             public void onTestCompleted(boolean success) {
-                System.out.println("Finished simple test");
-                QueueModTest queueModTest = new QueueModTest(new BaseTest.ITest() {
-                    @Override
-                    public void onTestCompleted(boolean success) {
-                        System.out.println("Finished queue mod test");
+                if (testProgress >= 0) {
+                    System.out.println("------------ Finished " + nameForTask(testProgress) + " test successfully? " + success);
+                }
 
-                        BigTest bigTest = new BigTest(new BaseTest.ITest() {
-                            @Override
-                            public void onTestCompleted(boolean success) {
-                                System.out.println("Finished big test");
+                testProgress++;
+                BaseTest nextTest = nextTestToRun(testProgress, this);
 
-                                PauseTest pauseTest = new PauseTest(new BaseTest.ITest() {
-                                    @Override
-                                    public void onTestCompleted(boolean success) {
-                                        System.out.println("Finished pause test");
-                                    }
-                                });
-                                pauseTest.start();
-                            }
-                        });
-                        bigTest.start();
-                    }
-                });
-                queueModTest.start();
+                if (nextTest != null) {
+                    System.out.println("------------ Starting test: " + nameForTask(testProgress) + " ------------");
+                    nextTest.start();
+                } else {
+                    System.out.println(" ------------------   Finished all tests       ------------------");
+                    return;
+                }
             }
-        });
-
-        simpleTest.start();
-        //simpleTest();
-
-        //testQueueModificaitons();
-        //startTheMachine();
+        };
+        testCallback.onTestCompleted(true);
+    }
 
 
-        /* If you want to test the daemon setting use something like the following
-        new Thread(new Runnable(){
-            @Override
-            public void run() {
-                Object LOCK = new Object();
-               try{
-                   //LOCK.wait();
-                   Thread.sleep(50000);
+    public static BaseTest nextTestToRun(int progress, BaseTest.ITest callback) {
+        switch (progress) {
+            case SIMPLE:
+                return new SimpleTest(callback);
+            case QUEUE_MOD:
+                return new QueueModTest(callback);
+            case BIG:
+                return new BigTest(callback);
+            case PAUSE:
+                return new PauseTest(callback);
+            case CANCEL_TASK:
+                return new CancelTasksTest(callback);
+        }
+        return null;
+    }
 
-               }catch (Exception e){
-                   e.printStackTrace();}
-            }
-
-
-        }).start();
-        */
-
+    public static String nameForTask(int progress) {
+        switch (progress) {
+            case SIMPLE:
+                return "SIMPLE";
+            case QUEUE_MOD:
+                return "QUEUE_MOD";
+            case BIG:
+                return "BIG";
+            case PAUSE:
+                return "PAUSE";
+            case CANCEL_TASK:
+                return "CANCEL_TASK";
+        }
+        return null;
     }
 
 
