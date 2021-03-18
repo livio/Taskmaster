@@ -122,8 +122,8 @@ public class Queue {
                 if(nextTask != null){
                     int taskState = nextTask.getState();
                     while ( head != null && taskState != Task.READY ){
-                        if(taskState == Task.CANCELED){
-                            TaskmasterLogger.v(TAG, nextTask.name + " task was canceled, dropping.");
+                        if(taskState == Task.CANCELED || taskState == Task.ERROR || taskState == Task.FINISHED){
+                            TaskmasterLogger.v(TAG, nextTask.name + " task was stale, dropping.");
                             //move to next task
                             head = head.next;
                             if(head == null){
@@ -133,7 +133,7 @@ public class Queue {
 
                             }
                         }else if( taskState == Task.BLOCKED){
-                            nextTask.switchStates(Task.READY);
+                            head.item.switchStates(Task.READY);
                             break;
                         }
                     }
@@ -411,6 +411,11 @@ public class Queue {
      * @return the current head of the queue
      */
     public Task peekNextTask() {
+        if(currentTask == null) {
+            //The queue must be cleared of stale tasks before returning a potential task
+            //This is only when there are no currently executing tasks
+            prepareNextTask();
+        }
         synchronized (TASKS_LOCK) {
             if (head != null) {
                 return head.item;
