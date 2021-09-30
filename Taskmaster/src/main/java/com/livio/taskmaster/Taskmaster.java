@@ -224,9 +224,8 @@ public class Taskmaster {
         }
 
         private void alert() {
-
-            if (isWaiting) {
-                synchronized (TASK_THREAD_LOCK) {
+            synchronized (TASK_THREAD_LOCK) {
+                if (isWaiting) {
                     TASK_THREAD_LOCK.notify();
                 }
             }
