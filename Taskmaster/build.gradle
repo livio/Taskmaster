@@ -7,21 +7,20 @@ sourceCompatibility = 1.7
 
 buildscript {
     repositories {
-        jcenter()
+        google()
+        mavenCentral()
+
     }
     dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
+        classpath 'com.android.tools.build:gradle:4.1.1'
     }
 }
 
 repositories {
     mavenCentral()
     google()
-    jcenter()
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
-
-apply from: 'bintray.gradle'
